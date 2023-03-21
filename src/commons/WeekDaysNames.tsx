@@ -1,15 +1,15 @@
 import React from 'react';
 import {StyleProp, Text, TextStyle} from 'react-native';
-import {weekDayNames} from '../dateutils';
+import {DateAdapter} from 'src/dateutils';
 
 interface WeekDaysNamesProps {
-  firstDay?: number;
+  adapter: DateAdapter;
   style?: StyleProp<TextStyle>;
 }
 
-const WeekDaysNames = React.memo(({firstDay, style}: WeekDaysNamesProps) => {
-  const dayNames = weekDayNames(firstDay);
-  
+function WeekDaysNames({adapter, style}: WeekDaysNamesProps): JSX.Element[] {
+  const dayNames = adapter.getWeekdays();
+
   return dayNames.map((day: string, index: number) => (
     <Text
       allowFontScaling={false}
@@ -23,6 +23,6 @@ const WeekDaysNames = React.memo(({firstDay, style}: WeekDaysNamesProps) => {
       {day}
     </Text>
   ));
-});
+}
 
 export default WeekDaysNames;

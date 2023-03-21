@@ -1,11 +1,11 @@
 import React, {Fragment, useCallback, useRef} from 'react';
 import {TouchableOpacity, Text, View, ViewProps} from 'react-native';
 
-import {xdateToData} from '../../../interface';
+import {getDateData} from '../../../interface';
 import {Theme, DayState, MarkingTypes, DateData} from '../../../types';
 import styleConstructor from './style';
 import Marking, {MarkingProps} from '../marking';
-
+import {DateAdapter} from 'src/dateutils';
 
 export interface BasicDayProps extends ViewProps {
   state?: DayState;
@@ -31,9 +31,12 @@ export interface BasicDayProps extends ViewProps {
   testID?: string;
   /** Accessibility label */
   accessibilityLabel?: string;
+
+  /** Date-IO adapter class */
+  adapter: DateAdapter;
 }
 
-const BasicDay = (props: BasicDayProps) => {
+const BasicDay = (props: BasicDayProps): JSX.Element => {
   const {
     theme,
     date,
@@ -57,7 +60,7 @@ const BasicDay = (props: BasicDayProps) => {
   const isMultiDot = markingType === Marking.markings.MULTI_DOT;
   const isMultiPeriod = markingType === Marking.markings.MULTI_PERIOD;
   const isCustom = markingType === Marking.markings.CUSTOM;
-  const dateData = date ? xdateToData(date) : undefined;
+  const dateData = date ? getDateData(date) : undefined;
 
   const shouldDisableTouchEvent = () => {
     const {disableTouchEvent} = _marking;

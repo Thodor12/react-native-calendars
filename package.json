@@ -38,7 +38,7 @@
     "prop-types": "^15.5.10",
     "react-native-swipe-gestures": "^1.0.5",
     "recyclerlistview": "^3.0.5",
-    "xdate": "^0.8.0"
+    "@date-io/core": "v2.16.0"
   },
   "devDependencies": {
     "@babel/core": "^7.12.9",
@@ -50,7 +50,6 @@
     "@types/lodash": "^4.14.170",
     "@types/react": "^17.0.44",
     "@types/react-native": "^0.64.19",
-    "@types/xdate": "^0.8.32",
     "@typescript-eslint/eslint-plugin": "^4.0.0",
     "@typescript-eslint/parser": "^4.0.0",
     "@welldone-software/why-did-you-render": "^6.0.3",

@@ -4,7 +4,7 @@ import React, {useRef, useState, useCallback, useMemo} from 'react';
 import {View, ViewStyle, ViewProps, StyleProp} from 'react-native';
 
 import {sameMonth} from '../../dateutils';
-import {xdateToData} from '../../interface';
+import {getDateData} from '../../interface';
 import {useDidUpdate} from '../../hooks';
 import {Theme, DateData} from '../../types';
 import {UpdateSources} from '../commons';
@@ -23,7 +23,7 @@ export interface CalendarContextProviderProps extends ViewProps {
   onDateChanged?: (date: string, updateSource: UpdateSources) => void;
   /** Callback for month change event */
   onMonthChange?: (date: DateData, updateSource: UpdateSources) => void;
-  
+
   /** Whether to show the today button */
   showTodayButton?: boolean;
   /** Today button's top position */
@@ -32,7 +32,7 @@ export interface CalendarContextProviderProps extends ViewProps {
   todayButtonStyle?: ViewStyle;
   /** The opacity for the disabled today button (0-1) */
   disabledOpacity?: number;
-  
+
   /** The number of days to present in the timeline calendar */
   numberOfDays?: number;
   /** The left inset of the timeline calendar (sidebar width), default is 72 */
@@ -75,24 +75,30 @@ const CalendarProvider = (props: CalendarContextProviderProps) => {
     }
   }, [date]);
 
-  const _setDate = useCallback((date: string, updateSource: UpdateSources) => {
-    prevDate.current = currDate.current;
-    currDate.current = date;
-    setCurrentDate(date);
-    setUpdateSource(updateSource);
+  const _setDate = useCallback(
+    (date: string, updateSource: UpdateSources) => {
+      prevDate.current = currDate.current;
+      currDate.current = date;
+      setCurrentDate(date);
+      setUpdateSource(updateSource);
 
-    onDateChanged?.(date, updateSource);
+      onDateChanged?.(date, updateSource);
 
-    if (!sameMonth(new XDate(date), new XDate(prevDate.current))) {
-      onMonthChange?.(xdateToData(new XDate(date)), updateSource);
-    }
-  }, [onDateChanged, onMonthChange]);
+      if (!sameMonth(new XDate(date), new XDate(prevDate.current))) {
+        onMonthChange?.(getDateData(new XDate(date)), updateSource);
+      }
+    },
+    [onDateChanged, onMonthChange]
+  );
 
-  const _setDisabled = useCallback((disabled: boolean) => {
-    if (showTodayButton) {
-      todayButton.current?.disable(disabled);
-    }
-  }, [showTodayButton]);
+  const _setDisabled = useCallback(
+    (disabled: boolean) => {
+      if (showTodayButton) {
+        todayButton.current?.disable(disabled);
+      }
+    },
+    [showTodayButton]
+  );
 
   const contextValue = useMemo(() => {
     return {

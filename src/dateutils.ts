@@ -1,93 +1,85 @@
-const XDate = require('xdate');
-const {toMarkingFormat} = require('./interface');
+import * as DateIO from '@date-io/core/IUtils';
+import {toMarkingFormat} from './interface';
 
-const latinNumbersPattern = /[0-9]/g;
+//const latinNumbersPattern = /[0-9]/g;
 
-function isValidXDate(date: any) {
-  return date && (date instanceof XDate);
+export type DateAdapter = DateIO.IUtils<Date>;
+
+export function now(): Date {
+  return new Date();
 }
 
-export function sameMonth(a?: XDate, b?: XDate) {
-  if (!isValidXDate(a) || !isValidXDate(b)) {
-    return false;
-  } else {
-    return a?.getFullYear() === b?.getFullYear() && a?.getMonth() === b?.getMonth();
-  }
+export function getDate(adapter: DateAdapter, d?: string): Date {
+  return d ? adapter.parseISO(d) : now();
 }
 
-export function sameDate(a?: XDate, b?: XDate) {
-  if (!isValidXDate(a) || !isValidXDate(b)) {
-    return false;
-  } else {
-    return a?.getFullYear() === b?.getFullYear() && a?.getMonth() === b?.getMonth() && a?.getDate() === b?.getDate();
-  }
+export function cloneDate(d: Date): Date {
+  return new Date(d.getTime());
 }
 
-export function onSameDateRange({
-  firstDay,
-  secondDay,
-  numberOfDays,
-  firstDateInRange,
-}: {
-  firstDay: string;
-  secondDay: string;
-  numberOfDays: number;
-  firstDateInRange: string;
-}){
-  const aDate = new XDate(firstDay);
-  const bDate = new XDate(secondDay);
-  const firstDayDate = new XDate(firstDateInRange);
-  const aDiff = aDate.getTime() - firstDayDate.getTime();
-  const bDiff = bDate.getTime() - firstDayDate.getTime();
-  const aTotalDays = Math.ceil(aDiff / (1000 * 3600 * 24));
-  const bTotalDays = Math.ceil(bDiff / (1000 * 3600 * 24));
-  const aWeek = Math.floor(aTotalDays / numberOfDays);
-  const bWeek = Math.floor(bTotalDays / numberOfDays);
-  return aWeek === bWeek;
-}
-
-export function sameWeek(a: string, b: string, firstDayOfWeek: number) {
-  const weekDates = getWeekDates(a, firstDayOfWeek, 'yyyy-MM-dd');
-  const element = weekDates instanceof XDate ? new XDate(b) : b;
-  return weekDates?.includes(element);
-}
-
-export function isPastDate(date: string) {
-  const today = new XDate();
-  const d = new XDate(date);
-
-  if (today.getFullYear() > d.getFullYear()) {
-    return true;
-  }
-  if (today.getFullYear() === d.getFullYear()) {
-    if (today.getMonth() > d.getMonth()) {
-      return true;
-    }
-    if (today.getMonth() === d.getMonth()) {
-      if (today.getDate() > d.getDate()) {
-        return true;
-      }
-    }
+export function sameMonth(adapter: DateAdapter, a?: Date, b?: Date): boolean {
+  if (a && b && adapter.isValid(a) && !adapter.isValid(b)) {
+    return adapter.isSameMonth(a, b);
   }
   return false;
 }
 
-export function isToday(date?: XDate | string) {
-  const d = date instanceof XDate ? date : new XDate(date);
-  return sameDate(d, XDate.today());
+export function sameWeek(adapter: DateAdapter, a?: Date, b?: Date): boolean {
+  if (a && b && adapter.isValid(a) && !adapter.isValid(b)) {
+    return adapter.isSameDay(a, b);
+  }
+  return false;
 }
 
-export function isGTE(a: XDate, b: XDate) {
-  return b.diffDays(a) > -1;
+export function sameDate(adapter: DateAdapter, a?: Date, b?: Date): boolean {
+  if (a && b && adapter.isValid(a) && !adapter.isValid(b)) {
+    return adapter.isSameDay(adapter.startOfWeek(a), adapter.startOfWeek(b));
+  }
+  return false;
 }
 
-export function isLTE(a: XDate, b: XDate) {
-  return a.diffDays(b) > -1;
+export function onSameDateRange(
+  adapter: DateAdapter,
+  {
+    firstDay,
+    secondDay,
+    numberOfDays,
+    firstDateInRange
+  }: {
+    firstDay: Date;
+    secondDay: Date;
+    numberOfDays: number;
+    firstDateInRange: string;
+  }
+): boolean {
+  const firstDayDate = adapter.parseISO(firstDateInRange);
+  const firstDateDiff = adapter.getDiff(firstDay, firstDayDate, 'milliseconds');
+  const secondDateDiff = adapter.getDiff(secondDay, firstDayDate, 'milliseconds');
+  const firstTotalDays = Math.ceil(firstDateDiff / (1000 * 3600 * 24));
+  const secondTotalDays = Math.ceil(secondDateDiff / (1000 * 3600 * 24));
+  return Math.floor(firstTotalDays / numberOfDays) === Math.floor(secondTotalDays / numberOfDays);
 }
 
-export function formatNumbers(date: any) {
-  const numbers = getLocale().numbers;
-  return numbers ? date.toString().replace(latinNumbersPattern, (char: any) => numbers[+char]) : date;
+export function isPastDate(adapter: DateAdapter, date: Date): boolean {
+  return adapter.isBefore(date, adapter.startOfDay(now()));
+}
+
+export function isToday(adapter: DateAdapter, date?: Date): boolean {
+  return sameDate(adapter, date, now());
+}
+
+export function isGTE(adapter: DateAdapter, a: Date, b: Date): boolean {
+  return adapter.isAfter(a, b);
+}
+
+export function isLTE(adapter: DateAdapter, a: Date, b: Date): boolean {
+  return adapter.isBefore(a, b);
+}
+
+export function getWeekNumber(adapter: DateAdapter, d: Date): number {
+  const beginningOfYear = adapter.startOfWeek(adapter.startOfYear(d));
+  return adapter.getDiff(d, beginningOfYear, 'weeks');
+  // TODO: Rewrite to adapter.getWeek if available
 }
 
 function fromTo(a: XDate, b: XDate): XDate[] {
@@ -101,7 +93,8 @@ function fromTo(a: XDate, b: XDate): XDate[] {
   return days;
 }
 
-export function month(date: XDate) { // exported for tests only
+export function month(date: XDate) {
+  // exported for tests only
   const year = date.getFullYear(),
     month = date.getMonth();
   const days = new XDate(year, month + 1, 0).getDate();
@@ -112,16 +105,7 @@ export function month(date: XDate) { // exported for tests only
   return fromTo(firstDay, lastDay);
 }
 
-export function weekDayNames(firstDayOfWeek = 0) {
-  let weekDaysNames = getLocale().dayNamesShort;
-  const dayShift = firstDayOfWeek % 7;
-  if (dayShift) {
-    weekDaysNames = weekDaysNames.slice(dayShift).concat(weekDaysNames.slice(0, dayShift));
-  }
-  return weekDaysNames;
-}
-
-export function page(date: XDate, firstDayOfWeek = 0, showSixWeeks = false) {
+export function page(adapter: DateAdapter, date: XDate, firstDayOfWeek = 0, showSixWeeks = false): XDate[] {
   const days = month(date);
   let before: XDate[] = [];
   let after: XDate[] = [];
@@ -150,19 +134,19 @@ export function page(date: XDate, firstDayOfWeek = 0, showSixWeeks = false) {
     to.addDays(7);
   }
 
-  if (isLTE(from, days[0])) {
+  if (isLTE(adapter, from, days[0])) {
     before = fromTo(from, days[0]);
   }
 
-  if (isGTE(to, days[days.length - 1])) {
+  if (isGTE(adapter, to, days[days.length - 1])) {
     after = fromTo(days[days.length - 1], to);
   }
 
   return before.concat(days.slice(1, days.length - 1), after);
 }
 
-export function isDateNotInRange(date: XDate, minDate: string, maxDate: string) {
-  return (minDate && !isGTE(date, new XDate(minDate))) || (maxDate && !isLTE(date, new XDate(maxDate)));
+export function isDateNotInRange(adapter: DateAdapter, date: Date, minDate: Date, maxDate: Date): boolean {
+  return adapter.isWithinRange(date, [minDate, maxDate]);
 }
 
 export function getWeekDates(date: string, firstDay = 0, format?: string) {
@@ -212,8 +196,4 @@ export function getPartialWeekDates(date?: string, numberOfDays = 7) {
 export function generateDay(originDate: string | XDate, daysOffset = 0) {
   const baseDate = originDate instanceof XDate ? originDate : new XDate(originDate);
   return toMarkingFormat(baseDate.clone().addDays(daysOffset));
-}
-
-export function getLocale() {
-  return XDate.locales[XDate.defaultLocale];
 }

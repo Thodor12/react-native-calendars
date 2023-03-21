@@ -1,12 +1,11 @@
 import omit from 'lodash/omit';
 import isEqual from 'lodash/isEqual';
 import some from 'lodash/some';
-import XDate from 'xdate';
 import React, {useMemo} from 'react';
 
-import {formatNumbers, isToday} from '../../dateutils';
+import {getDate, isToday} from '../../dateutils';
 import {getDefaultLocale} from '../../services';
-import {xdateToData} from '../../interface';
+import {getDateData} from '../../interface';
 import {DateData} from '../../types';
 import BasicDay, {BasicDayProps} from './basic';
 import PeriodDay from './period';
@@ -28,9 +27,9 @@ export interface DayProps extends BasicDayProps {
 }
 
 const Day = React.memo((props: DayProps) => {
-  const {date, marking, dayComponent, markingType} = props;
-  const _date = date ? new XDate(date) : undefined;
-  const _isToday = isToday(_date);
+  const {date, marking, dayComponent, markingType, adapter} = props;
+  const _date = getDate(adapter, date);
+  const _isToday = isToday(adapter, _date);
 
   const markingAccessibilityLabel = useMemo(() => {
     let label = '';
@@ -69,12 +68,12 @@ const Day = React.memo((props: DayProps) => {
   }, [_date, marking, _isToday]);
 
   const Component = dayComponent || (markingType === 'period' ? PeriodDay : BasicDay);
-  const dayComponentProps = dayComponent ? {date: xdateToData(date || new XDate())} : undefined;
+  const dayComponentProps = dayComponent ? {date: getDateData(adapter, _date)} : undefined;
 
   return (
     //@ts-expect-error
     <Component {...props} accessibilityLabel={getAccessibilityLabel} {...dayComponentProps}>
-      {formatNumbers(_date?.getDate())}
+      {adapter.format(_date, adapter.formats.fullDate)}
     </Component>
   );
 }, areEqual) as any;
